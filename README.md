@@ -130,8 +130,10 @@ python scripts/daily_report.py          # write reports/YYYY-MM-DD.md + LATEST.m
 Rscript R/analysis.R                   # optional: R indicators, CSV and PNG chart
 ```
 
-`daily_report.py --no-state` ignores cooldown (useful for re-running the demo),
-and `--send-email` attempts an SMTP delivery when a signal triggers.
+`daily_report.py --no-state` ignores cooldown (useful for re-running the demo).
+`--send-email` attempts an SMTP delivery when a signal triggers;
+`--test-email` sends one message regardless of signals, `--email-always` sends
+a daily digest, and `--dry-run-email` checks the wiring without contacting SMTP.
 
 Both Python scripts and `R/analysis.R` were executed and verified on the
 authoring machine (R 4.6.2). The R path reproduces the same 222 sessions,
@@ -145,6 +147,7 @@ above.
 
 ```
 config.json                     all thresholds, clearly marked as example values
+.env.example                    template for local mail credentials (the real .env is git-ignored)
 scripts/fetch_prices.py         source -> normalised CSV, with staleness guard
 scripts/daily_report.py         indicators, signals, cooldown, backtest, report, email
 R/analysis.R                    base-R implementation + chart (run locally)
@@ -160,15 +163,63 @@ reports/r_signals.png           R chart: price, MA20 and both trigger families
 
 `daily.yml` runs at 22:00 UTC on weekdays (06:00 Beijing the next morning):
 it downloads the prices into a git-ignored CSV, rebuilds the report, and commits
-only the report and the cooldown state. Email is sent only when a signal
-triggers. Configure five repository secrets:
+only the report and the cooldown state. The cooldown state is committed with the
+report, so it survives between scheduled runs; a fresh clone (or `--no-state`)
+starts with no cooldown.
 
-`SMTP_HOST`, `SMTP_PORT` (default 465), `SMTP_USER`, `SMTP_PASS` and `ALERT_TO`.
-Without them the job still produces the report and prints `email: skipped`.
-Credentials are never stored in the repository.
+### Email alerts
 
-The cooldown state is committed with the report, so it survives between
-scheduled runs. A fresh clone (or `--no-state`) starts with no cooldown.
+Think of it as a doorbell on the copper price: the job checks the price every
+working morning, but it only rings (sends one email) on the days a rule fires.
+A 5-day cooldown stops one price wave from producing five near-identical mails.
+Set `email_on_trigger_only` to `false` in `config.json` if you would rather get
+a report every working day.
+
+Five repository secrets are needed. In the GitHub repo go to
+**Settings → Secrets and variables → Actions → New repository secret** and add:
+
+| Secret | What to put in it | Example |
+| --- | --- | --- |
+| `SMTP_HOST` | your mail provider's sending server | `smtp.qq.com` |
+| `SMTP_PORT` | `465` for implicit SSL, `587` for STARTTLS | `465` |
+| `SMTP_USER` | the full address you send from | `you@qq.com` |
+| `SMTP_PASS` | an **app password / authorisation code**, not your login password | `abcdefghijklmnop` |
+| `ALERT_TO` | where the alert lands; comma-separated for several people | `you@qq.com` |
+
+Common providers:
+
+| Provider | `SMTP_HOST` | `SMTP_PORT` | How to get `SMTP_PASS` |
+| --- | --- | --- | --- |
+| QQ mail | `smtp.qq.com` | 465 or 587 | Settings → Account → enable SMTP, generate an authorisation code |
+| 163 mail | `smtp.163.com` | 465 or 994 | Settings → POP3/SMTP/IMAP → authorisation code |
+| Gmail | `smtp.gmail.com` | 465 or 587 | Google Account → Security → 2-step verification → App passwords |
+| Outlook | `smtp.office365.com` | 587 | App password (requires 2FA and admin-enabled SMTP AUTH) |
+
+`ALERT_FROM` is an optional sixth secret for providers that require a specific
+`From` address; by default the sender is `SMTP_USER`.
+
+**Verify before relying on it.** Open **Actions → Daily copper signal → Run
+workflow** and tick `test_email`; that sends one message regardless of the day's
+signals. For a local check, copy `.env.example` to `.env` (git-ignored), fill it
+in and run `python scripts/daily_report.py --test-email`. `--dry-run-email`
+checks the wiring without contacting the mail server. The Actions log prints
+`email: sent to ...`, `email: skipped (...)` or `email: failed: (...)`.
+
+Notes worth knowing:
+
+- Without the secrets the job still builds and commits the report, and prints
+  `email: skipped (SMTP secrets not configured)`. A mail failure never loses
+  the report.
+- Credentials are never stored in the repository — only in GitHub's encrypted
+  secrets (or a local, git-ignored `.env`). Never paste an app password into
+  an issue, a commit or a screenshot.
+- Some providers reject logins from cloud IP addresses. If the log shows an
+  authentication or `550` error from GitHub Actions but local `--test-email`
+  works, try the other port, or use a provider that allows SMTP from cloud
+  runners.
+- A public repository's scheduled workflows are paused after 60 days with no
+  repository activity. Make any commit (or run the workflow manually) before
+  then to keep the schedule alive.
 
 ## Limitations
 

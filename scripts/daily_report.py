@@ -3,7 +3,8 @@
 
 Zero third-party dependencies. Reads config.json + data/prices_lme_cash.csv,
 computes two independent signal families, applies a cooldown, backtests on the
-available history and writes a Markdown report. Optionally emails on trigger.
+available history and writes a Markdown report. Optionally emails on trigger;
+`--test-email` sends a one-off check, `--email-always` sends a daily digest.
 
 Signal A (SURGE)  : price rising fast -> consider locking in a purchase early.
 Signal B (DIP)    : price back near recent lows -> consider restocking.
@@ -21,6 +22,27 @@ from email.message import EmailMessage
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SOURCE_URL = "https://www.westmetall.com/en/markdaten.php?action=table&field=LME_Cu_cash"
+
+
+def load_local_env(path=None):
+    """Optional, zero-dependency .env support for local testing only.
+
+    Real credentials live in a git-ignored .env file or in GitHub Actions
+    secrets. Existing environment variables always win over the file.
+    """
+    path = path or os.path.join(ROOT, ".env")
+    if not os.path.exists(path):
+        return
+    with open(path, encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            key = key.strip()
+            value = value.strip().strip('"').strip("'")
+            if key and value and key not in os.environ:
+                os.environ[key] = value
 
 
 def load_config(path):
@@ -255,9 +277,10 @@ def render(data, cfg, as_of, levels, reasons, bt, staleness):
     return "\n".join(lines)
 
 
-def maybe_email(report, levels, cfg, as_of):
-    triggered = any(v == "TRIGGER" for v in levels.values())
-    if cfg.get("email_on_trigger_only", True) and not triggered:
+def maybe_email(report, levels, cfg, as_of, force=False, daily=False):
+    """Send the report. Never raises: an email failure must not lose the report."""
+    triggered = [k for k, v in levels.items() if v == "TRIGGER"]
+    if not force and not daily and not triggered:
         return "skipped (no trigger today; daily digest disabled)"
     host = os.environ.get("SMTP_HOST")
     user = os.environ.get("SMTP_USER")
@@ -265,19 +288,37 @@ def maybe_email(report, levels, cfg, as_of):
     to = os.environ.get("ALERT_TO")
     if not all([host, user, pwd, to]):
         return "skipped (SMTP secrets not configured)"
+
+    # An unset Actions secret renders as an empty string, so `or` matters here.
+    port = int(os.environ.get("SMTP_PORT") or "465")
+    sender = os.environ.get("ALERT_FROM") or user
+    recipients = [x.strip() for x in to.split(",") if x.strip()]
+    label = ("TEST / manual check" if force else
+             ", ".join(triggered) if triggered else "daily digest")
+    intro = ("This is a test message: the SMTP connection works.\n\n"
+             if force else
+             "A copper price rule fired today. Full report below.\n\n")
+
     msg = EmailMessage()
-    triggered = ", ".join(k for k, v in levels.items() if v == "TRIGGER")
-    msg["Subject"] = "[Copper signal %s] %s triggered" % (as_of, triggered)
-    msg["From"] = user
-    msg["To"] = to
-    msg.set_content(report)
+    msg["Subject"] = "[Copper signal %s] %s" % (as_of, label)
+    msg["From"] = sender
+    msg["To"] = ", ".join(recipients)
+    msg.set_content(intro + report)
     try:
-        with smtplib.SMTP_SSL(host, int(os.environ.get("SMTP_PORT", "465"))) as s:
+        if port in (465, 994):
+            smtp = smtplib.SMTP_SSL(host, port, timeout=20)
+        else:
+            # 587 and most corporate relays require STARTTLS, not implicit SSL.
+            smtp = smtplib.SMTP(host, port, timeout=20)
+            smtp.ehlo()
+            smtp.starttls()
+            smtp.ehlo()
+        with smtp as s:
             s.login(user, pwd)
-            s.send_message(msg)
-        return "sent to %s" % to
+            s.send_message(msg, from_addr=sender, to_addrs=recipients)
+        return "sent to %s" % ", ".join(recipients)
     except Exception as exc:
-        return "failed: %r" % exc
+        return "failed: %r (report was still generated)" % exc
 
 
 def main():
@@ -288,8 +329,15 @@ def main():
     ap.add_argument("--state", default=os.path.join(ROOT, "data", "alert_state.json"))
     ap.add_argument("--no-state", action="store_true", help="Do not read or write cooldown state")
     ap.add_argument("--send-email", action="store_true")
+    ap.add_argument("--test-email", action="store_true",
+                    help="Send one test message regardless of today's signals")
+    ap.add_argument("--email-always", action="store_true",
+                    help="Send a digest even when no signal triggered")
+    ap.add_argument("--dry-run-email", action="store_true",
+                    help="Report what would be emailed without contacting SMTP")
     args = ap.parse_args()
 
+    load_local_env()
     cfg = load_config(args.config)
     rows = load_prices(args.prices)
     if len(rows) < cfg["lookback_days"]:
@@ -321,8 +369,16 @@ def main():
           % (len(bt["surge_days"]), len(bt["dip_days"]), len(bt["baseline_days"]),
              "n/a" if bt["delta_pct"] is None else "%+.2f%%" % bt["delta_pct"]))
     print("report       : %s" % dated)
-    print("email        : %s" % (maybe_email(report, levels, cfg, as_of)
-                                 if args.send_email else "disabled (use --send-email)"))
+    if args.send_email or args.test_email:
+        if args.dry_run_email:
+            email_status = "dry run (SMTP not contacted)"
+        else:
+            daily = args.email_always or not cfg.get("email_on_trigger_only", True)
+            email_status = maybe_email(report, levels, cfg, as_of,
+                                       force=args.test_email, daily=daily)
+    else:
+        email_status = "disabled (use --send-email or --test-email)"
+    print("email        : %s" % email_status)
     return 0
 
 

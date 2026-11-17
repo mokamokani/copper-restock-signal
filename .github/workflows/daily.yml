@@ -5,6 +5,15 @@ on:
     # 22:00 UTC on weekdays = 06:00 Beijing the following morning
     - cron: '0 22 * * 1-5'
   workflow_dispatch:
+    inputs:
+      test_email:
+        description: 'Send one test email (ignores signal status)'
+        type: boolean
+        default: false
+      daily_digest:
+        description: 'Send today''s report even if no signal triggered'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -29,7 +38,11 @@ jobs:
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
           ALERT_TO: ${{ secrets.ALERT_TO }}
-        run: python scripts/daily_report.py --send-email
+        run: |
+          ARGS="--send-email"
+          if [ "${{ inputs.test_email }}" = "true" ]; then ARGS="$ARGS --test-email"; fi
+          if [ "${{ inputs.daily_digest }}" = "true" ]; then ARGS="$ARGS --email-always"; fi
+          python scripts/daily_report.py $ARGS
 
       - name: Commit generated artefacts
         run: |
