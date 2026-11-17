@@ -1,0 +1,20 @@
+{
+  "_note": "All thresholds below are EXAMPLE VALUES for demonstration. Confirm with the business before operational use. No real company data is stored in this repository.",
+  "ma_window": 20,
+  "lookback_days": 60,
+  "surge_1d_pct": 2.0,
+  "surge_5d_pct": 5.0,
+  "surge_requires_5d_confirmation": true,
+  "watch_5d_pct": 2.5,
+  "dip_vs_ma20_pct": -3.0,
+  "percentile_60d_max": 0.25,
+  "watch_dev_pct": -1.5,
+  "cooldown_days": 5,
+  "max_staleness_days": 7,
+  "email_on_trigger_only": true,
+  "synthetic_procurement": {
+    "_note": "SYNTHETIC. Illustrative volumes only, not real family-business data.",
+    "order_size_t": 5.0,
+    "monthly_usage_t": 20.0
+  }
+}

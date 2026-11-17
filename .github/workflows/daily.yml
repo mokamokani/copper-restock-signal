@@ -1,0 +1,45 @@
+name: Daily copper signal
+
+on:
+  schedule:
+    # 22:00 UTC on weekdays = 06:00 Beijing the following morning
+    - cron: '0 22 * * 1-5'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  daily:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Refresh published prices
+        run: python scripts/fetch_prices.py
+
+      - name: Build report and send alert if triggered
+        env:
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          ALERT_TO: ${{ secrets.ALERT_TO }}
+        run: python scripts/daily_report.py --send-email
+
+      - name: Commit generated artefacts
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Raw prices stay git-ignored; commit only derived report + cooldown state.
+          git add data/alert_state.json reports/
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: daily copper signal $(date -u +%F)"
+            git push
+          fi
