@@ -1,9 +1,11 @@
 #!/usr/bin/env Rscript
 # Copper procurement signal - R implementation (base R only, no packages).
 #
-# STATUS: NOT EXECUTED in the authoring environment (R / Rscript is not installed
-# on that machine). The Python scripts under scripts/ were executed and verified.
-# Run locally with:  Rscript R/analysis.R
+# STATUS: EXECUTED and cross-checked on R 4.6.2 (Windows, 2026-11-17).
+# Reproduces the Python report exactly: 222 sessions, as of 2026-11-16,
+# 18 raw A triggers, 15 raw B triggers, baseline 13454.32 USD/t,
+# dip average 12673.37 USD/t, delta -5.80% (simulation, synthetic volumes).
+# Run with:  Rscript R/analysis.R
 #
 # Outputs:
 #   reports/r_signal_summary.csv   daily indicators + raw signal flags
