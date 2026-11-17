@@ -24,7 +24,7 @@
 | Signal | Status | What it means |
 | --- | --- | --- |
 | A · Surge → consider locking in | **WATCH** | Price rising fast; buying later may cost more. A risk warning, not a 'cheap price' signal. |
-| B · Dip → consider restocking | **TRIGGER** | Price back near recent lows relative to its MA and 60-session range. |
+| B · Dip → consider restocking | **COOLDOWN** | Price back near recent lows relative to its MA and 60-session range. |
 
 Rules (all thresholds in `config.json`, all example values):
 
