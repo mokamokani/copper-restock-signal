@@ -1,6 +1,6 @@
-# Copper procurement signal — 2026-11-23
+# Copper procurement signal — 2026-11-24
 
-> Data as of **2026-11-20** (latest LME cash settlement). Staleness: 3 day(s).  
+> Data as of **2026-11-23** (latest LME cash settlement). Staleness: 1 day(s).  
 > Source: [Westmetall](https://www.westmetall.com/en/markdaten.php?action=table&field=LME_Cu_cash), publishing LME official settlement data.  
 > Unit: USD per tonne for prices, tonnes for LME stock. Prices are end-of-day, not real-time.
 
@@ -8,23 +8,23 @@
 
 | Metric | Value |
 | --- | --- |
-| LME copper cash settlement | 12230.50 USD/t |
-| LME copper 3-month | 12237.00 USD/t |
-| Cash vs 3-month (basis) | -0.05% |
-| LME stock | 332025 t |
-| 1-session change | -2.70% |
-| 5-session change | -10.14% |
-| MA20 | 13846.83 USD/t |
-| Deviation from MA20 | -11.67% |
+| LME copper cash settlement | 12165.00 USD/t |
+| LME copper 3-month | 12170.00 USD/t |
+| Cash vs 3-month (basis) | -0.04% |
+| LME stock | 330975 t |
+| 1-session change | -0.54% |
+| 5-session change | -9.05% |
+| MA20 | 13730.08 USD/t |
+| Deviation from MA20 | -11.40% |
 | Price rank in last 60 sessions | 2% |
-| LME stock, 5-session change | +0.89% |
+| LME stock, 5-session change | +1.07% |
 
 ## Signals
 
 | Signal | Status | What it means |
 | --- | --- | --- |
 | A · Surge → consider locking in | **CLEAR** | Price rising fast; buying later may cost more. A risk warning, not a 'cheap price' signal. |
-| B · Dip → consider restocking | **COOLDOWN** | Price back near recent lows relative to its MA and 60-session range. |
+| B · Dip → consider restocking | **TRIGGER** | Price back near recent lows relative to its MA and 60-session range. |
 
 Rules (all thresholds in `config.json`, all example values):
 
@@ -34,28 +34,28 @@ Rules (all thresholds in `config.json`, all example values):
 
 Today's evaluation:
 
-- B: -11.67% vs MA20 and rank 2% of last 60 sessions
+- B: -11.40% vs MA20 and rank 2% of last 60 sessions
 
 ## Backtest on the available history
 
-Window: **2026-01-02 → 2026-11-20**, 226 trading sessions of real published prices.
+Window: **2026-01-02 → 2026-11-23**, 227 trading sessions of real published prices.
 
 Trigger counts below are **raw signals without cooldown**; the live report above applies cooldown.
 
 | Item | Result |
 | --- | --- |
 | A (surge) trigger days | 18 |
-| B (dip) trigger days | 19 |
+| B (dip) trigger days | 20 |
 | Baseline: first session of each month | 11 sessions |
 | Baseline average price | 13454.32 USD/t |
-| Average price on B trigger days | 12677.71 USD/t |
-| Difference (signal − baseline) | -5.77% |
+| Average price on B trigger days | 12652.08 USD/t |
+| Difference (signal − baseline) | -5.96% |
 
 Both strategies are compared on the **same total tonnage split evenly across their buy days**,
 so only the average purchase price differs. Illustrative volume: 5.0 t per order / 20.0 t per month
 — **SYNTHETIC parameters, not real company data.**
 
-Most recent B trigger dates: 2026-03-25, 2026-03-26, 2026-03-27, 2026-11-06, 2026-11-11, 2026-11-12, 2026-11-13, 2026-11-16, 2026-11-17, 2026-11-18, 2026-11-19, 2026-11-20.
+Most recent B trigger dates: 2026-03-26, 2026-03-27, 2026-11-06, 2026-11-11, 2026-11-12, 2026-11-13, 2026-11-16, 2026-11-17, 2026-11-18, 2026-11-19, 2026-11-20, 2026-11-23.
 
 ## Caveats
 
