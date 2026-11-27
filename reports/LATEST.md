@@ -1,6 +1,6 @@
-# Copper procurement signal — 2026-11-26
+# Copper procurement signal — 2026-11-27
 
-> Data as of **2026-11-25** (latest LME cash settlement). Staleness: 1 day(s).  
+> Data as of **2026-11-26** (latest LME cash settlement). Staleness: 1 day(s).  
 > Source: [Westmetall](https://www.westmetall.com/en/markdaten.php?action=table&field=LME_Cu_cash), publishing LME official settlement data.  
 > Unit: USD per tonne for prices, tonnes for LME stock. Prices are end-of-day, not real-time.
 
@@ -8,16 +8,16 @@
 
 | Metric | Value |
 | --- | --- |
-| LME copper cash settlement | 11703.00 USD/t |
-| LME copper 3-month | 11758.00 USD/t |
-| Cash vs 3-month (basis) | -0.47% |
-| LME stock | 336750 t |
-| 1-session change | -2.76% |
-| 5-session change | -8.21% |
-| MA20 | 13451.95 USD/t |
-| Deviation from MA20 | -13.00% |
-| Price rank in last 60 sessions | 2% |
-| LME stock, 5-session change | +2.86% |
+| LME copper cash settlement | 11965.00 USD/t |
+| LME copper 3-month | 11960.00 USD/t |
+| Cash vs 3-month (basis) | +0.04% |
+| LME stock | 337925 t |
+| 1-session change | +2.24% |
+| 5-session change | -4.81% |
+| MA20 | 13322.20 USD/t |
+| Deviation from MA20 | -10.19% |
+| Price rank in last 60 sessions | 3% |
+| LME stock, 5-session change | +3.18% |
 
 ## Signals
 
@@ -34,28 +34,28 @@ Rules (all thresholds in `config.json`, all example values):
 
 Today's evaluation:
 
-- B: -13.00% vs MA20 and rank 2% of last 60 sessions
+- B: -10.19% vs MA20 and rank 3% of last 60 sessions
 
 ## Backtest on the available history
 
-Window: **2026-01-02 → 2026-11-25**, 229 trading sessions of real published prices.
+Window: **2026-01-02 → 2026-11-26**, 230 trading sessions of real published prices.
 
 Trigger counts below are **raw signals without cooldown**; the live report above applies cooldown.
 
 | Item | Result |
 | --- | --- |
 | A (surge) trigger days | 18 |
-| B (dip) trigger days | 22 |
+| B (dip) trigger days | 23 |
 | Baseline: first session of each month | 11 sessions |
 | Baseline average price | 13454.32 USD/t |
-| Average price on B trigger days | 12580.89 USD/t |
-| Difference (signal − baseline) | -6.49% |
+| Average price on B trigger days | 12554.11 USD/t |
+| Difference (signal − baseline) | -6.69% |
 
 Both strategies are compared on the **same total tonnage split evenly across their buy days**,
 so only the average purchase price differs. Illustrative volume: 5.0 t per order / 20.0 t per month
 — **SYNTHETIC parameters, not real company data.**
 
-Most recent B trigger dates: 2026-11-06, 2026-11-11, 2026-11-12, 2026-11-13, 2026-11-16, 2026-11-17, 2026-11-18, 2026-11-19, 2026-11-20, 2026-11-23, 2026-11-24, 2026-11-25.
+Most recent B trigger dates: 2026-11-11, 2026-11-12, 2026-11-13, 2026-11-16, 2026-11-17, 2026-11-18, 2026-11-19, 2026-11-20, 2026-11-23, 2026-11-24, 2026-11-25, 2026-11-26.
 
 ## Caveats
 
